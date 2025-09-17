@@ -27,13 +27,12 @@ public class OpenMeteoClient {
 
             ResponseBody body = response.body();
             String json = body.string();
-            System.out.println("Raw JSON: " + json);
 
             Gson gson = new Gson();
             return gson.fromJson(json, OpenMeteoResponse.class);
         } catch (Exception e) {
             System.out.print(e.getMessage());
-            return new OpenMeteoResponse(e.getMessage(), 500);
+            return new OpenMeteoResponse();
         }
     }
 }
