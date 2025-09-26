@@ -2,6 +2,7 @@ package co.aamsis.weather.conditions.discovery.executor;
 
 import java.util.Queue;
 import java.util.concurrent.*;
+import java.util.function.Supplier;
 
 public class ConcurrentHttpRequestsExecutor {
     static private ExecutorService service;
@@ -38,8 +39,8 @@ public class ConcurrentHttpRequestsExecutor {
         }
     }
 
-    public static <T> Future<T> execute(Callable<T> callable) {
-        return service.submit(callable);
+    public static <T> CompletableFuture<T> execute(Supplier<T> supplier) {
+        return CompletableFuture.supplyAsync(supplier, service);
     }
 
     public static Future<?> executeOrderly() throws Exception {

@@ -6,9 +6,12 @@ import co.aamsis.weather.conditions.discovery.executor.ConcurrentHttpRequestsExe
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-public class Main implements AutoCloseable {
+public class Main {
     static void experimentWithExecutorOrderly() throws Exception {
         OpenMeteoClient.instantiate();
         var factory = Thread.ofVirtual().name("virtual-threads-", 1).factory();
@@ -35,6 +38,8 @@ public class Main implements AutoCloseable {
         }
         Instant end = Instant.now();
         System.out.println("the duration of the operation was: " + Duration.between(start, end).toMillis());
+
+        ConcurrentHttpRequestsExecutor.closeService();
     }
 
     static void experimentWithExecutor() throws ExecutionException, InterruptedException {
@@ -62,14 +67,51 @@ public class Main implements AutoCloseable {
         }
         Instant end = Instant.now();
         System.out.println("the duration of the operation was: " + Duration.between(start, end).toMillis());
-    }
-    public static void main(String[] args) throws Exception {
-        experimentWithExecutor();
-        //experimentWithExecutorOrderly();
-    }
 
-    @Override
-    public void close() throws Exception {
         ConcurrentHttpRequestsExecutor.closeService();
     }
+
+    static void experimentWithExecutorAndCompletableFuture() {
+        OpenMeteoClient.instantiate();
+        var factory = Thread.ofVirtual().name("virtual-threads-", 1).factory();
+        ConcurrentHttpRequestsExecutor.instantiateVirtual(factory);
+        double[] latitudes = { 6.2798652316551316, 6.557981968954068, 5.690106984074268, 7.992501417936491, 6.2765902188199085 };
+        double[] longitudes = { -75.58276991899643, -75.82894721199372, -76.67037397794111, -75.20780624507267, -75.59497135432744 };
+        Instant start = Instant.now();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
+
+        for (int i = 0; i < 5; i++) {
+            final int it = i;
+            futures.add(ConcurrentHttpRequestsExecutor.execute(() -> OpenMeteoClient.fetchForecastForLocation(latitudes[it], longitudes[it])));
+        }
+
+        CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
+
+        Instant end = Instant.now();
+        System.out.println("the duration of the operation was: " + Duration.between(start, end).toMillis());
+
+        var list = futures.stream().map(future -> {
+            try {
+                return (OpenMeteoResponse) future.get();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        list.forEach((openMeteoResponse) -> {
+            System.out.println("latitude: " + openMeteoResponse.getLatitude()  + ", longitude: " + openMeteoResponse.getLongitude() + ", elevation: " + openMeteoResponse.getElevation());
+        });
+
+        ConcurrentHttpRequestsExecutor.closeService();
+    }
+
+    public static void main(String[] args) throws Exception {
+        //experimentWithExecutor();
+        //experimentWithExecutorOrderly();
+        experimentWithExecutorAndCompletableFuture();
+
+    }
+
 }
