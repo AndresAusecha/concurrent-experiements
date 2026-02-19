@@ -1,5 +1,7 @@
 package co.aamsis;
 
+import co.aamsis.bank.BankAccount;
+import co.aamsis.bank.Simulator;
 import co.aamsis.weather.conditions.discovery.clients.OpenMeteoClient;
 import co.aamsis.weather.conditions.discovery.clients.OpenMeteoResponse;
 import co.aamsis.weather.conditions.discovery.executor.ConcurrentHttpRequestsExecutor;
@@ -107,11 +109,23 @@ public class Main {
         ConcurrentHttpRequestsExecutor.closeService();
     }
 
-    public static void main(String[] args) throws Exception {
+    static void simulateBankAccount() {
+        Simulator simulator = new Simulator();
+        simulator.simulateBankAccount();
+    }
+
+    static void simulateBankAccountConcurrent() {
+        Simulator simulator = new Simulator();
+        simulator.simulateBankAccountConcurrentSupport();
+    }
+
+
+    public static void main(String[] args) {
         //experimentWithExecutor();
         //experimentWithExecutorOrderly();
-        experimentWithExecutorAndCompletableFuture();
-
+        //experimentWithExecutorAndCompletableFuture();
+        //simulateBankAccount();
+        simulateBankAccountConcurrent();
     }
 
 }
